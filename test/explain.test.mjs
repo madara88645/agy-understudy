@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { analyzeAgyRun, classifyLine, PHASES, AGY_PRIMER } from "../agy-explain.mjs";
+import { analyzeAgyRun, classifyLine, PHASES, AGY_PRIMER } from "../src/explain.mjs";
 
 test("empty running log reports the starting phase", () => {
   const activity = analyzeAgyRun({ log: "", status: "running" });
@@ -67,9 +67,9 @@ test("terminal statuses override the last log line", () => {
 test("stalled runs explain the watchdog reason", () => {
   const timeout = analyzeAgyRun({ log: "I will read.", status: "stalled", termination: "timeout-6min" });
   assert.equal(timeout.phase, "stalled");
-  assert.match(timeout.explanation, /6 dakika/);
+  assert.match(timeout.explanation, /6-minute time limit/);
   const noOutput = analyzeAgyRun({ log: "I will read.", status: "stalled", termination: "stall-90s-no-output" });
-  assert.match(noOutput.explanation, /90 saniye/);
+  assert.match(noOutput.explanation, /90 seconds/);
 });
 
 test("a run with no status and no log is archived", () => {

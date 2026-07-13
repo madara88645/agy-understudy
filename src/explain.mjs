@@ -21,84 +21,19 @@
  * @type {Record<AgyPhase, { label: string, icon: string, tone: string, blurb: string }>}
  */
 export const PHASES = {
-  starting: {
-    label: "Başlıyor",
-    icon: "◔",
-    tone: "neutral",
-    blurb: "Antigravity yeni başladı; görevi ve çalışma alanını okumaya hazırlanıyor. Henüz gözle görülür bir adım yazmadı.",
-  },
-  reading: {
-    label: "Okuyor",
-    icon: "▤",
-    tone: "info",
-    blurb: "Antigravity mevcut dosyaları okuyor. Kod yazmadan önce projeyi anlamaya çalışıyor — bir insanın işe başlamadan önce dosyalara göz atması gibi.",
-  },
-  exploring: {
-    label: "Keşfediyor",
-    icon: "⌕",
-    tone: "info",
-    blurb: "Antigravity klasörleri listeliyor / arama yapıyor. Nerede ne olduğunu haritalıyor, ilgili dosyaları buluyor.",
-  },
-  planning: {
-    label: "Planlıyor",
-    icon: "◇",
-    tone: "plan",
-    blurb: "Antigravity bir plan / mimari kuruyor. Koda geçmeden önce adımları ve yapıyı tasarlıyor.",
-  },
-  editing: {
-    label: "Kod yazıyor",
-    icon: "✎",
-    tone: "edit",
-    blurb: "Antigravity dosyalarda değişiklik yapıyor: yeni kod yazıyor, düzenliyor ya da düzeltiyor. İşin asıl uygulama kısmı burada oluyor.",
-  },
-  testing: {
-    label: "Test ediyor",
-    icon: "✓",
-    tone: "test",
-    blurb: "Antigravity testleri / doğrulamayı çalıştırıyor. Yazdığı kodun gerçekten çalışıp çalışmadığını kendi kendine kontrol ediyor.",
-  },
-  running: {
-    label: "Komut çalıştırıyor",
-    icon: "»",
-    tone: "run",
-    blurb: "Antigravity bir komut çalıştırıyor (derleme, kurulum, script). Sonucu bir sonraki adımını belirleyecek.",
-  },
-  asking: {
-    label: "Karar / soru",
-    icon: "?",
-    tone: "warn",
-    blurb: "Antigravity bir soru sordu ya da bir karar noktasına geldi. Log'da hangi seçime takıldığını görebilirsin.",
-  },
-  reporting: {
-    label: "Raporluyor",
-    icon: "▣",
-    tone: "info",
-    blurb: "Antigravity işi topluyor: ne yaptığını, sonucu ve varsa kısıtları özetliyor. Bitişe yakın.",
-  },
-  done: {
-    label: "Tamamlandı",
-    icon: "●",
-    tone: "ok",
-    blurb: "Antigravity koşuyu temiz bitirdi. Çıktı kodunu ve üretilen dosyaları kontrol edebilirsin — ama sonucu yine de bağımsız doğrula.",
-  },
-  failed: {
-    label: "Hata",
-    icon: "✕",
-    tone: "bad",
-    blurb: "Antigravity hata ile durdu (sıfırdan farklı çıkış kodu). Log'un sonundaki hata mesajına bakmak gerekir.",
-  },
-  stalled: {
-    label: "Takıldı / durduruldu",
-    icon: "‖",
-    tone: "bad",
-    blurb: "Koşu takıldı ya da watchdog tarafından durduruldu (çok uzun sürdü veya 90 sn çıktı gelmedi). Nerede kaldığını log'un sonu gösterir.",
-  },
-  archived: {
-    label: "Arşiv",
-    icon: "◍",
-    tone: "neutral",
-    blurb: "Bu, manifesti olmayan eski bir koşu. Sadece log'dan okunabiliyor; canlı değil.",
-  },
+  starting:  { label: "Starting",       icon: "◔", tone: "neutral", blurb: "Antigravity just started; it's getting ready to read the task and the workspace. No visible step yet." },
+  reading:   { label: "Reading",        icon: "▤", tone: "info",    blurb: "Antigravity is reading existing files. It's understanding the project before writing code — like a person skimming files before starting." },
+  exploring: { label: "Exploring",      icon: "⌕", tone: "info",    blurb: "Antigravity is listing folders / searching. It's mapping where things are and finding the relevant files." },
+  planning:  { label: "Planning",       icon: "◇", tone: "plan",    blurb: "Antigravity is forming a plan / architecture. It's designing the steps and structure before touching code." },
+  editing:   { label: "Writing code",   icon: "✎", tone: "edit",    blurb: "Antigravity is changing files: writing new code, editing, or fixing. This is the actual implementation work." },
+  testing:   { label: "Testing",        icon: "✓", tone: "test",    blurb: "Antigravity is running tests / validation. It's checking that the code it wrote actually works." },
+  running:   { label: "Running command",icon: "»", tone: "run",     blurb: "Antigravity is running a command (build, install, script). The result will shape its next step." },
+  asking:    { label: "Question",       icon: "?", tone: "warn",    blurb: "Antigravity raised a question or hit a decision point. The log shows which choice it paused on." },
+  reporting: { label: "Reporting",      icon: "▣", tone: "info",    blurb: "Antigravity is wrapping up: summarizing what it did, the result, and any limits. Near the finish." },
+  done:      { label: "Completed",      icon: "●", tone: "ok",      blurb: "Antigravity finished cleanly. Check the exit code and the files it produced — but still verify the result independently." },
+  failed:    { label: "Failed",         icon: "✕", tone: "bad",     blurb: "Antigravity stopped with an error (non-zero exit). Look at the error message at the end of the log." },
+  stalled:   { label: "Stalled / killed",icon: "‖",tone: "bad",     blurb: "The run stalled or was killed by the watchdog (ran too long or went 90s with no output). The end of the log shows where it got stuck." },
+  archived:  { label: "Archived",       icon: "◍", tone: "neutral", blurb: "An older run with no manifest. Only readable from the log; not live." },
 };
 
 // A line is only a question if it actually contains a "?" AND an interrogative
@@ -206,11 +141,11 @@ export function analyzeAgyRun(run = {}) {
   let explanation = meta.blurb;
   if (phase === "stalled" && run.termination) {
     const reason = run.termination === "timeout-6min"
-      ? "6 dakikalık süre sınırına takıldığı için"
+      ? "it hit the 6-minute time limit"
       : run.termination === "stall-90s-no-output"
-        ? "90 saniye boyunca yeni çıktı üretmediği için"
-        : `“${run.termination}” nedeniyle`;
-    explanation = `Koşu ${reason} watchdog tarafından durduruldu. Log'un sonu nerede kaldığını gösterir.`;
+        ? "it produced no new output for 90 seconds"
+        : `of "${run.termination}"`;
+    explanation = `The run was killed by the watchdog because ${reason}. The end of the log shows where it stopped.`;
   }
 
   // Surface a question/decision ONLY when it was Antigravity's *last* action —
@@ -236,24 +171,9 @@ export function analyzeAgyRun(run = {}) {
  * @type {{ q: string, a: string }[]}
  */
 export const AGY_PRIMER = [
-  {
-    q: "Antigravity (agy) nedir?",
-    a: "Google'ın Gemini modelini çalıştıran, yerel makinende koşan bir komut satırı ajanı. Senin lokal ajanların (Claude, Codex, Cursor) sınırları belli bir işi ona devrediyor; Antigravity de o işi kendi yapıyor: dosyaları okuyor, plan kuruyor, kod yazıyor ve test ediyor.",
-  },
-  {
-    q: "Adım adım nasıl çalışıyor?",
-    a: "Genelde şu sırayı izler: görevi anla → dosyaları oku/keşfet → plan yap → kod yaz → test/komut çalıştır → sonucu raporla. Her adımı 'I will ...' diye tek cümlede yazar. Bu panel o cümleleri yakalayıp sade Türkçeye çeviriyor, böylece kod bilmeden de ne yaptığını takip edebilirsin.",
-  },
-  {
-    q: "Bu koşuyu ne durdurur?",
-    a: "Antigravity'i bir 'watchdog' izliyor: toplam 6 dakikalık süre sınırı ve 90 saniye boyunca hiç çıktı gelmezse otomatik durdurma. Durdurma, sürecin kaydedilmiş PID/PGID'si ile güvenli yapılır — isimle geniş arama yapılmaz.",
-  },
-  {
-    q: "Güvenli mi?",
-    a: "Evet. Antigravity yalnızca ~/agy-sandbox altında çalışır, '--dangerously-skip-permissions' asla kullanılmaz. Bu panel salt-okunurdur (dosyalarına dokunmaz) ve sadece 127.0.0.1 üzerinden yerel olarak yayınlanır.",
-  },
-  {
-    q: "Bu panelde ne görüyorum?",
-    a: "Soldaki listeden bir koşu seç: canlı log akışını, Antigravity'e verilen talimatı, ürettiği dosyaları ve 'şu an ne yapıyor?' açıklamasını görürsün. Çıktı kodu 0 olsa bile sonucu her zaman bağımsız doğrula.",
-  },
+  { q: "What is Antigravity (agy)?", a: "A command-line agent that runs Google's Gemini model locally on your machine. Your primary agent (or you) hands it a bounded task, and Antigravity does the work itself: reads files, plans, writes code, and tests." },
+  { q: "How does it work, step by step?", a: "It usually goes: understand the task → read/explore files → plan → write code → run tests/commands → report. It narrates each step in one line ('I will ...'). This panel captures those lines and explains them in plain language so you can follow along without reading raw logs." },
+  { q: "What stops a run?", a: "A watchdog watches Antigravity: a 6-minute total time limit and an auto-kill if no output arrives for 90 seconds. Termination uses the recorded PID/PGID — never a broad name match." },
+  { q: "Is it safe?", a: "The run only touches the sandbox directory you point it at, and '--dangerously-skip-permissions' is never used. This panel is read-only (it never changes your files) and is served locally on 127.0.0.1 only." },
+  { q: "What am I looking at here?", a: "Pick a run on the left: you'll see the live log stream, the prompt it was given, the files it produced, and a plain-language 'what is it doing now?' explanation. Always verify the result independently, even on a clean exit." },
 ];
