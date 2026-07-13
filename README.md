@@ -1,64 +1,57 @@
-# AGY Live Inspector
+# Understudy
 
-Yerel Mac üzerinde `~/agy-sandbox` altındaki AGY koşularını izleyen salt-okunur panel.
+**A live cockpit for the AI coding agents you delegate to Google Antigravity (agy / Gemini).**
+Offload the grunt work to a cheap model, watch it work in plain language, and save your
+premium model budget for the hard thinking.
 
-## Başlatma
+![Understudy cockpit](docs/hero.gif)
+
+## Why
+
+Premium coding-model budgets run out fast, and rate limits bite. Google Antigravity / Gemini
+agents are cheap with generous limits — but they run headless and you can't see what they're
+doing. Understudy makes delegating to the cheap model **safe and visible**: hand off routine
+implementation, watch every step, and keep your premium model for what actually needs it.
+Smart routing, not magic.
+
+## Quickstart
 
 ```bash
-npm run viewer
+npx agy-understudy
 ```
 
-Panel `http://localhost:3000` adresinde, dosya sistemi bridge'i ise yalnızca
-`127.0.0.1:4288` adresinde çalışır. Bridge, mevcut `agy.log` dosyalarını
-otomatik bulur. Gelecekteki koşular için wrapper kullanıldığında prompt, PID,
-PGID, watchdog ve çıkış bilgisi de kaydedilir:
+Opens a local cockpit at http://127.0.0.1:4288 that lists the Antigravity runs under
+`~/agy-sandbox` and streams what each one is doing, live.
+
+Delegate a bounded task to Antigravity and watch it:
 
 ```bash
-bash scripts/run-agy-sandbox.sh \
-  --sandbox "$HOME/agy-sandbox/ornek-kosu" \
-  --prompt-file "$HOME/agy-sandbox/ornek-kosu/prompt.txt"
+npx agy-understudy run --dir ~/agy-sandbox/my-task --prompt ~/agy-sandbox/my-task/prompt.md
 ```
 
-Wrapper yalnızca `~/agy-sandbox` altındaki koşuları kabul eder ve
-`--dangerously-skip-permissions` kullanmaz. Prompt kayıtları yerelde tutulur;
-secret içeren promptlar kullanmayın.
+## What you see
 
-## Canlı Inspector — "Antigravity şu an ne yapıyor?"
+- A live **activity strip**: reading / exploring / planning / writing code / testing / question / done.
+- An **Explanation** tab: a step-by-step timeline plus a "how Antigravity works" primer.
+- The prompt it was given and the files it produced.
 
-Panel açıldığında doğrudan **AGY Live Inspector** görünür (Campus Dataset Lab
-üst menüden hâlâ erişilebilir). Bir koşu **çalışıyor** durumundaysa otomatik
-olarak seçilir; böylece paneli koşu sırasında açtığında hemen ne olduğunu
-görürsün.
+## Requirements
 
-Seçilen her koşuda, log akışının üstünde bir **etkinlik şeridi** durur:
-Antigravity'nin log'a yazdığı doğal dil satırları (`I will read…`,
-`I will run the tests…`, `Should I…?`) yerelde ayrıştırılıp sade Türkçeye
-çevrilir. Faz rozetleri: **Okuyor · Keşfediyor · Planlıyor · Kod yazıyor ·
-Test ediyor · Komut çalıştırıyor · Karar/soru · Raporluyor · Tamamlandı ·
-Hata · Takıldı**. Bir soru/karar noktası çıkarsa ayrıca vurgulanır.
+- [Google Antigravity](https://antigravity.google) CLI (`agy`) on your PATH.
+- Node.js ≥ 20.
 
-**Açıklama** sekmesi ise adım adım zaman çizelgesini ve her zaman açılabilen
-bir "Antigravity nasıl çalışır?" özetini gösterir. Açıklama tamamen yereldir:
-LLM çağrısı, ağ isteği veya sağlayıcı yoktur — yalnızca deterministik metin
-analizi (`agy-explain.mjs`), bu yüzden testlerle doğrulanabilir.
+## Configuration
 
-## Campus Dataset Lab
+- `--root <dir>` / `UNDERSTUDY_ROOT` — where runs live (default `~/agy-sandbox`).
+- `--port <n>` / `UNDERSTUDY_PORT` — cockpit port (default 4288).
 
-`Campus Dataset Lab`, analiz pratiği için küçük ve **açıkça sentetik** veri
-setleri üretir. Çıktılar gerçek kampüs, öğrenci veya kişi verisi değildir;
-kanıt, araştırma sonucu ya da karar vermek için kullanılmamalıdır. Kişisel
-bilgi, not, sağlık kaydı, kimlik veya production veri istemleri reddedilir.
+## How it works
 
-- Yerel demo, deterministik campus-energy örneği üretir. Canlı web araştırması
-  yapmaz; `research-sources.md` içinde bunu açıkça yazar ve kaynak uydurmaz.
-- Her iş yalnızca `~/agy-sandbox/datasets/<job-id>/` altında tutulur. İş kimliği,
-  path traversal ve root dışına giden symlink kontrolleri yapılır.
-- Her tamamlanan demoda `dataset.csv`, `dataset.json`, `data-dictionary.md`,
-  `research-sources.md`, `assumptions.md` ve `validation.json` bulunur.
-- Canlı mod, sadece açıkça yapılandırılmış bir yerel sağlayıcı arayüzü ile
-  kullanılabilir. Güvenli yer tutucu: `CAMPUS_DATASET_AGENT_URL=https://example.invalid/local-agent`.
-  Bu proje sağlayıcı/anahtar eklemez; yapılandırma yoksa ekranda dürüstçe
-  `Agent not configured` durumu gösterilir.
+Understudy is local-only and read-only. One Node process serves the cockpit UI and a small API
+that reads the run directories under your root. The "what is it doing?" explanation is produced
+by a deterministic local parser (no LLM, no network). A watchdog protects delegated runs
+(6-minute limit, 90-second stall kill).
 
-`npm run viewer` hem salt-okunur AGY Inspector bridge'ini (`127.0.0.1:4288`),
-hem de Dataset Lab bridge'ini (`127.0.0.1:4289`) yalnızca yerel makinede açar.
+## License
+
+MIT.
