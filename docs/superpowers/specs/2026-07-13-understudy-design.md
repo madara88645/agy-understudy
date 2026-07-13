@@ -37,7 +37,7 @@ right work to the right model. It is **not** positioned as quota circumvention o
   plain-language activity explainer (phases + timeline + "how it works" primer).
 - **One-command delegate:** `understudy run --dir <sandbox> --prompt <file>` hands a bounded
   task to `agy` and the cockpit auto-focuses it, live.
-- **Zero-install:** `npx understudy` starts one local server and opens the cockpit. Minimal
+- **Zero-install:** `npx agy-understudy` starts one local server and opens the cockpit. Minimal
   runtime dependencies; UI shipped pre-built.
 - **Star engine:** a sharp English README with a hero GIF, 30-second quickstart, and the
   smart-routing philosophy. MIT license.
@@ -64,7 +64,7 @@ heavy for a localhost viewer and kills install friction.
 static UI.**
 
 ```
- npx understudy
+ npx agy-understudy
       │
       ▼
  bin/understudy.mjs ──► starts server.mjs (Node http, one port, e.g. 4288)
@@ -100,9 +100,9 @@ existing path-safety tests, `run.mjs` via a smoke test with a fake `agy`.
 
 ## 7. CLI / UX
 
-- `npx understudy` → starts the server, prints the URL, opens the browser. Persistent
+- `npx agy-understudy` → starts the server, prints the URL, opens the browser. Persistent
   (intentionally stays up so you can watch current + past runs).
-- `npx understudy run --dir <sandbox> --prompt <file> [--agent <name>] [--mode plan|accept-edits]`
+- `npx agy-understudy run --dir <sandbox> --prompt <file> [--agent <name>] [--mode plan|accept-edits]`
   → validates the sandbox is under the root, copies the prompt, runs `agy`, records
   log/manifest/PID/exit/watchdog; the cockpit auto-focuses the running run.
 - `--root <dir>` / `UNDERSTUDY_ROOT` → where runs live (default `~/agy-sandbox`).
@@ -155,13 +155,12 @@ specific home dir. Root and port are flags/env with sane defaults. The old
 
 ## 10. Distribution & packaging
 
-- **Brand / GitHub repo:** `understudy` (account-scoped, available).
-- **npm package name:** the bare `understudy` is taken on npm (v4.1.0, unrelated), so the
-  published package is **`understudy-cli`** → users run `npx understudy-cli`. (Alternatives:
-  `agy-understudy`, or a scoped `@<user>/understudy`.) The `bin` still exposes an
-  `understudy` command name locally. *Pending user confirmation.*
-- `bin` field → `understudy` command; published package ships **pre-built** `dist/ui` (via
-  `prepublishOnly`) so `npx understudy` needs no build and installs ~no runtime deps.
+- **Product/brand name:** **Understudy** (used in the UI title, README hero, docs).
+- **GitHub repo + npm package + CLI command:** **`agy-understudy`** (user-chosen; the bare
+  `understudy` is taken on npm, and the `agy-` prefix makes the Antigravity tie obvious and
+  discoverable). Users run `npx agy-understudy`.
+- `bin` field → `agy-understudy` command; published package ships **pre-built** `dist/ui` (via
+  `prepublishOnly`) so `npx agy-understudy` needs no build and installs ~no runtime deps.
 - `package.json` `files` limited to `bin/`, `src/`, `dist/ui/`, `README.md`, `LICENSE`.
 - **License:** MIT.
 - Node engines: `>=20` (broad, modern).
@@ -171,7 +170,7 @@ specific home dir. Root and port are flags/env with sane defaults. The old
 Priority artifact. Structure:
 1. Hero line + **animated GIF** of the live cockpit changing phases during a real run.
 2. "Why" in three seconds: save your premium budget; offload grunt work to a cheap watched agent.
-3. 30-second quickstart: `npx understudy` (+ the `run` example).
+3. 30-second quickstart: `npx agy-understudy` (+ the `run` example).
 4. What you see: activity strip, Açıklama→"Explanation" timeline, how-Antigravity-works primer.
 5. Requirements: Google Antigravity (`agy`) installed. Local-only, read-only, MIT.
 6. Philosophy: smart routing, not quota circumvention.
@@ -200,9 +199,8 @@ Priority artifact. Structure:
 
 ## 15. Open questions / resolved
 
-1. **npm name — RESOLVED (pending user nod):** bare `understudy` is taken (v4.1.0). Plan:
-   GitHub repo + brand = `understudy`; npm package = **`understudy-cli`** (`npx understudy-cli`).
-   User may prefer `agy-understudy` or scoped `@<user>/understudy`.
+1. **npm name — RESOLVED:** product/brand = **Understudy**; GitHub repo + npm package + CLI
+   command = **`agy-understudy`** (`npx agy-understudy`). User-chosen 2026-07-13.
 2. **Default port — RESOLVED:** keep `4288` for v1 (avoid bikeshedding), overridable via
    `--port` / `UNDERSTUDY_PORT`.
 3. **`understudy run` — RESOLVED:** Node port of the bash wrapper (cross-platform), not the
