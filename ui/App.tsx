@@ -38,7 +38,7 @@ function MarkdownDocument({ source, empty }: { source: string; empty: string }) 
       const code: string[] = []; const language = line.trim().slice(3); cursor += 1;
       while (cursor < lines.length && !/^```/.test(lines[cursor].trim())) { code.push(lines[cursor]); cursor += 1; }
       if (cursor < lines.length) cursor += 1;
-      blocks.push(<pre className="markdown-code" key={`code-${cursor}`}><span>{language || "kod"}</span><code>{code.join("\n")}</code></pre>); continue;
+      blocks.push(<pre className="markdown-code" key={`code-${cursor}`}><span>{language || "code"}</span><code>{code.join("\n")}</code></pre>); continue;
     }
     const heading = line.match(/^(#{1,3})\s+(.+)$/);
     if (heading) { const level = heading[1].length; const content = inlineMarkdown(heading[2]); const Tag = level === 1 ? "h1" : level === 2 ? "h2" : "h3"; blocks.push(<Tag key={`heading-${cursor}`}>{content}</Tag>); cursor += 1; continue; }

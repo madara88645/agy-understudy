@@ -42,5 +42,5 @@ tsconfig.tsbuildinfo
 /outputs/
 /work/
 
-# local AGY Live Inspector runtime (pid/log written by ensure-live-viewer.sh)
+# local runtime artifacts
 /.run/

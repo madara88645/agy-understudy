@@ -20,7 +20,7 @@ button { font: inherit; color: inherit; }
 @media (max-width: 860px) { .lab-grid { grid-template-columns: 1fr; }.dataset-results { min-height: 0; } }
 @media (max-width: 620px) { .product-link { padding: 6px 4px; font-size: 12px; }.connection { display: none; }.lab-shell { min-height: calc(100vh - 56px); padding-top: 34px; }.lab-intro h1 { font-size: 38px; }.mode-row, .form-split, .result-sections { grid-template-columns: 1fr; }.result-heading { display: grid; }.synthetic-chip { justify-self: start; }.result-sections article { min-height: auto; }.result-sections p { min-height: 0; } }
 
-/* AGY activity explainer — "Antigravity şu an ne yapıyor?" */
+/* AGY activity explainer — "what is Antigravity doing now?" */
 .tone-neutral { --tone: #a9b8c5; }.tone-info { --tone: #9dcaff; }.tone-plan { --tone: #c9a9ff; }.tone-edit { --tone: #f2c779; }.tone-test { --tone: #8ce5bc; }.tone-run { --tone: #7fd7e8; }.tone-warn { --tone: #f3c96b; }.tone-ok { --tone: #6eecb0; }.tone-bad { --tone: #ff9baa; }
 .activity-card { margin: 4px 0 22px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--tone, var(--accent)); border-radius: 12px; }
 .activity-head { display: flex; align-items: center; gap: 13px; }.activity-icon { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; color: var(--tone, var(--accent)); background: color-mix(in srgb, var(--tone, var(--accent)) 16%, transparent); border-radius: 11px; font-size: 19px; }
@@ -32,7 +32,7 @@ button { font: inherit; color: inherit; }
 .activity-question { margin: 11px 0 0; padding: 10px 12px; color: #ffe6b0; background: rgba(243, 201, 107, .1); border: 1px solid rgba(243, 201, 107, .32); border-radius: 8px; font-size: 13px; line-height: 1.55; }.activity-question strong { color: #ffd479; }
 @media (prefers-reduced-motion: reduce) { .live-pulse { animation: none; } }
 
-/* Açıklama tab */
+/* Explanation tab */
 .explain-panel { max-width: 820px; }
 .explain-now { display: flex; gap: 15px; padding: 18px; background: var(--surface-soft); border: 1px solid var(--line); border-left: 3px solid var(--tone, var(--accent)); border-radius: 12px; }.explain-now h3 { margin: 0 0 6px; color: var(--text); font-size: 18px; }.explain-now p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }.explain-now .activity-line, .explain-now .activity-question { margin-top: 10px; }
 .explain-section-title { margin: 28px 0 14px; color: var(--text); font-size: 15px; font-weight: 650; }.explain-section-title small { margin-left: 7px; color: var(--faint); font-weight: 500; }

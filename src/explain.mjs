@@ -2,8 +2,8 @@
 //
 // Antigravity narrates its work as a stream of natural-language lines
 // ("I will read ...", "I will run the tests ...", "Does this look correct?").
-// This module turns that raw stream into a plain-Turkish, human-readable answer
-// to a single question: *Antigravity şu an ne yapıyor, neden?*
+// This module turns that raw stream into a plain-language, human-readable answer
+// to a single question: what is Antigravity doing right now, and why?
 //
 // It runs the same in the browser (imported by app/page.tsx) and in Node tests.
 // No LLM call, no network, no filesystem — pure string analysis, so it is fully
@@ -16,7 +16,7 @@
  */
 
 /**
- * Static, per-phase presentation + plain-Turkish meaning. `tone` maps to a CSS
+ * Static, per-phase presentation + plain-language meaning. `tone` maps to a CSS
  * class in globals.css; `icon` is a text glyph so it renders without an icon font.
  * @type {Record<AgyPhase, { label: string, icon: string, tone: string, blurb: string }>}
  */
@@ -102,7 +102,7 @@ function terminalPhase(status) {
 }
 
 /**
- * Build a live, plain-Turkish explanation of what an Antigravity run is doing.
+ * Build a live, plain-language explanation of what an Antigravity run is doing.
  * @param {{ log?: string|null, status?: string|null, termination?: string|null, endedAt?: string|null }} run
  * @returns {AgyActivity}
  */
@@ -167,7 +167,7 @@ export function analyzeAgyRun(run = {}) {
 
 /**
  * Always-available primer explaining how Antigravity works, in plain Turkish.
- * Shown in the Inspector so Mehmet can follow along even between runs.
+ * Shown in the cockpit so you can follow along even between runs.
  * @type {{ q: string, a: string }[]}
  */
 export const AGY_PRIMER = [

@@ -25,8 +25,8 @@ const MAX_TEXT_BYTES = 512 * 1024;
 const MAX_FILES = 160;
 const RUN_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
-function json(response, status, value) { response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Access-Control-Allow-Origin": "http://localhost:3000", "Cache-Control": "no-store" }); response.end(JSON.stringify(value)); }
-function text(response, status, value) { response.writeHead(status, { "Content-Type": "text/plain; charset=utf-8", "Access-Control-Allow-Origin": "http://localhost:3000", "Cache-Control": "no-store" }); response.end(value); }
+function json(response, status, value) { response.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" }); response.end(JSON.stringify(value)); }
+function text(response, status, value) { response.writeHead(status, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }); response.end(value); }
 function isDirectRunId(id) { return RUN_ID.test(id) && id !== "." && id !== ".."; }
 
 async function readText(file) {
@@ -109,7 +109,7 @@ export async function createBridge({ sandboxRoot = process.env.UNDERSTUDY_ROOT |
       if (url.pathname === "/api/runs") return json(response, 200, { runs: await reader.runs() });
       if (url.pathname === "/api/stream") {
         const id = url.searchParams.get("run") || ""; if (!isDirectRunId(id)) return text(response, 400, "invalid run id");
-        response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive", "Access-Control-Allow-Origin": "http://localhost:3000" });
+        response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" });
         const send = async () => response.write(`event: snapshot\ndata: ${JSON.stringify(await reader.detail(id))}\n\n`);
         await send(); const timer = setInterval(() => { void send().catch(() => response.end()); }, 1000); request.on("close", () => clearInterval(timer)); return;
       }

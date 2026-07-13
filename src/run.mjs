@@ -7,8 +7,9 @@ const TIMEOUT_MS = 6 * 60 * 1000;
 const STALL_MS = 90 * 1000;
 function isoNow() { return new Date().toISOString().replace(/\.\d+Z$/, "Z"); }
 
-export async function runAgy({ root, sandbox, promptFile, mode = "", agent = "" }) {
+export async function runAgy({ root, sandbox, promptFile, mode = "", agent = "", timeoutMs = TIMEOUT_MS, stallMs = STALL_MS, killGraceMs = 5000 } = {}) {
   if (!sandbox || !promptFile) throw new Error("run requires --dir <sandbox> and --prompt <file>");
+  if (mode && mode !== "plan" && mode !== "accept-edits") throw new Error(`mode must be "plan" or "accept-edits" (got "${mode}")`);
   // realpath ALL three paths so the containment check is symlink-safe
   // (macOS /var -> /private/var would otherwise produce false "outside root" errors).
   const rootReal = await fs.realpath(path.resolve(root ?? process.env.UNDERSTUDY_ROOT ?? path.join(os.homedir(), "agy-sandbox")));
@@ -36,7 +37,9 @@ export async function runAgy({ root, sandbox, promptFile, mode = "", agent = "" 
   const startedAt = isoNow();
   const fd = openSync(log, "a"); // agy writes stdout+stderr straight to the log (matches `> log 2>&1`)
   let child;
-  try { child = spawn("agy", args, { cwd: sandboxReal, stdio: ["ignore", fd, fd] }); }
+  // detached: true makes the child a process-group leader (pgid === child.pid),
+  // so the watchdog can signal the whole group — killing agy AND anything it spawned.
+  try { child = spawn("agy", args, { cwd: sandboxReal, stdio: ["ignore", fd, fd], detached: true }); }
   catch (e) { closeSync(fd); throw new Error(`could not start agy: ${e.message}`); }
 
   async function writeManifest(status, extra = {}) {
@@ -52,17 +55,28 @@ export async function runAgy({ root, sandbox, promptFile, mode = "", agent = "" 
   });
   await writeManifest("running");
 
+  // Signal the whole process group, then escalate SIGTERM -> SIGKILL after a
+  // grace period, mirroring the original wrapper (kill -TERM -PGID; sleep; kill -KILL -PGID).
+  let killTimer = null;
+  function killGroup(signal) {
+    if (!child.pid) return;
+    try { process.kill(-child.pid, signal); } catch { /* group already gone */ }
+  }
   let termination = "";
   let lastSize = -1, lastChange = Date.now();
   const t0 = Date.now();
+  const tick = Math.max(50, Math.min(5000, Math.floor(Math.min(timeoutMs, stallMs) / 3)));
   const watchdog = setInterval(async () => {
     try { const s = (await fs.stat(log)).size; if (s !== lastSize) { lastSize = s; lastChange = Date.now(); } } catch { /* stat may fail transiently; ignore */ }
-    if (Date.now() - t0 >= TIMEOUT_MS) { termination = "timeout-6min"; child.kill("SIGTERM"); }
-    else if (Date.now() - lastChange >= STALL_MS) { termination = "stall-90s-no-output"; child.kill("SIGTERM"); }
-  }, 5000);
+    if (termination) return;
+    if (Date.now() - t0 >= timeoutMs) termination = "timeout-6min";
+    else if (Date.now() - lastChange >= stallMs) termination = "stall-90s-no-output";
+    if (termination) { killGroup("SIGTERM"); killTimer = setTimeout(() => killGroup("SIGKILL"), killGraceMs); }
+  }, tick);
 
   const code = await done;
   clearInterval(watchdog);
+  if (killTimer) clearTimeout(killTimer);
   closeSync(fd);
 
   if (sawError) {
