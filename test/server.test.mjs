@@ -13,7 +13,7 @@ test("lists an in-root run and rejects traversal and symlink runs", async () => 
 });
 
 test("serves a built UI asset and falls back to index.html", async () => {
-  const { mkdtemp, mkdir, writeFile } = await import("node:fs/promises");
+  const { mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os"); const path = (await import("node:path")).default;
   const root = await mkdtemp(path.join(os.tmpdir(), "agy-viewer-"));
   const server = await createBridge({ sandboxRoot: root, port: 0 });

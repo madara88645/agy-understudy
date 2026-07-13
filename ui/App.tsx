@@ -1,6 +1,4 @@
-"use client";
-
-import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { analyzeAgyRun, PHASES, AGY_PRIMER } from "../src/explain.mjs";
 import "./styles.css";
 
@@ -75,7 +73,7 @@ function ActivityStrip({ activity }: { activity: AgyActivity }) {
     <div className="activity-head">
       <span className="activity-icon" aria-hidden>{meta.icon}</span>
       <div className="activity-headline"><p className="eyebrow">ANTIGRAVITY NOW{activity.isLive ? " · LIVE" : ""}</p><h2>{meta.label}</h2></div>
-      {activity.isLive && <span className="live-pulse" aria-label="canlı" />}
+      {activity.isLive && <span className="live-pulse" aria-label="live" />}
     </div>
     <p className="activity-explain">{activity.explanation}</p>
     {activity.currentLine && <p className="activity-line"><span aria-hidden>›</span> {activity.currentLine}</p>}
@@ -119,7 +117,7 @@ export default function Home() {
         {detail ? <><div className="run-header"><div><p className="eyebrow">AGY RUN</p><h1>{detail.id}</h1><p className="run-path">{detail.sandboxPath}</p></div><StatusBadge status={detail.status} /></div>
           <div className="summary-row"><div><span>Started</span><strong>{formatDate(detail.startedAt)}</strong></div><div><span>Duration</span><strong>{formatDuration(detail.durationMs)}</strong></div><div><span>Exit</span><strong>{detail.exitCode ?? "—"}</strong></div><div><span>Watchdog</span><strong>{detail.termination || "Clean"}</strong></div></div>
           {activity && <ActivityStrip activity={activity} />}
-          <div className="content-toolbar"><nav aria-label="Koşu içeriği">{TABS.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "tab active" : "tab"} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "files" && <small>{detail.files.length}</small>}</button>)}</nav>{activeTab === "log" && <button className={follow ? "follow active" : "follow"} onClick={() => setFollow((value) => !value)}>{follow ? "Following live" : "Paused"}</button>}</div>
+          <div className="content-toolbar"><nav aria-label="Run content">{TABS.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "tab active" : "tab"} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "files" && <small>{detail.files.length}</small>}</button>)}</nav>{activeTab === "log" && <button className={follow ? "follow active" : "follow"} onClick={() => setFollow((value) => !value)}>{follow ? "Following live" : "Paused"}</button>}</div>
           <div ref={contentRef} className="content-card">{activeTab === "files" ? <ul className="files">{detail.files.length ? detail.files.map((file) => <li key={file}><span>⌁</span>{file}</li>) : <li>No files recorded for this run.</li>}</ul> : activeTab === "explain" ? (activity ? <ExplainPanel activity={activity} /> : null) : <MarkdownDocument source={documentSource} empty={activeTab === "log" ? "This run hasn't written a log yet." : "No saved prompt for this archived run."} />}</div>
         </> : <div className="welcome"><p className="eyebrow">UNDERSTUDY</p><h1>Select a run</h1><p>Open a run from the left to see its live stream, a plain-language explanation of what Antigravity is doing right now, the prompt it was given, and the files it produced.</p><AgyPrimer /></div>}
       </section>
