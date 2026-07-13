@@ -5,6 +5,21 @@ import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
 
+const UI_DIR = fileURLToPath(new URL("../dist/ui", import.meta.url));
+const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".json": "application/json; charset=utf-8", ".ico": "image/x-icon", ".woff2": "font/woff2", ".png": "image/png" };
+
+async function serveStatic(response, pathname) {
+  const rel = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const target = path.resolve(UI_DIR, rel);
+  if (target !== UI_DIR && !target.startsWith(UI_DIR + path.sep)) { return text(response, 400, "bad path"); }
+  let file = target;
+  try { const stat = await fs.lstat(file); if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("not a file"); }
+  catch { file = path.join(UI_DIR, "index.html"); try { await fs.access(file); } catch { return text(response, 404, "UI not built. Run `npm run build`."); } }
+  const body = await fs.readFile(file);
+  response.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream", "Cache-Control": file.endsWith("index.html") ? "no-store" : "public, max-age=3600" });
+  response.end(body);
+}
+
 const DEFAULT_ROOT = path.join(os.homedir(), "agy-sandbox");
 const MAX_TEXT_BYTES = 512 * 1024;
 const MAX_FILES = 160;
@@ -84,7 +99,7 @@ async function createReader(rootInput) {
   return { detail, runs };
 }
 
-export async function createBridge({ sandboxRoot = process.env.AGY_SANDBOX_ROOT || DEFAULT_ROOT, port = 4288 } = {}) {
+export async function createBridge({ sandboxRoot = process.env.UNDERSTUDY_ROOT || process.env.AGY_SANDBOX_ROOT || DEFAULT_ROOT, port = 4288 } = {}) {
   const reader = await createReader(sandboxRoot);
   const server = http.createServer(async (request, response) => {
     if (!request.url || request.method !== "GET") return text(response, 405, "method not allowed");
@@ -99,10 +114,16 @@ export async function createBridge({ sandboxRoot = process.env.AGY_SANDBOX_ROOT 
         await send(); const timer = setInterval(() => { void send().catch(() => response.end()); }, 1000); request.on("close", () => clearInterval(timer)); return;
       }
       const match = url.pathname.match(/^\/api\/runs\/([A-Za-z0-9][A-Za-z0-9._-]*)$/); if (match) return json(response, 200, await reader.detail(match[1]));
-      return text(response, 404, "not found");
+      return serveStatic(response, url.pathname);
     } catch (error) { const message = error instanceof Error ? error.message : "unknown error"; return text(response, /invalid|outside|unsafe|resolved/.test(message) ? 400 : 404, message); }
   });
   await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve)); return server;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) createBridge().then(() => console.log("AGY bridge listening on http://127.0.0.1:4288")).catch((error) => { console.error(error.message); process.exitCode = 1; });
+export async function startServer({ sandboxRoot, port } = {}) {
+  return createBridge({ sandboxRoot: sandboxRoot ?? process.env.UNDERSTUDY_ROOT, port: port ?? (Number(process.env.UNDERSTUDY_PORT) || 4288) });
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  startServer().then((s) => console.log(`Understudy API on http://127.0.0.1:${s.address().port}`)).catch((e) => { console.error(e.message); process.exitCode = 1; });
+}
