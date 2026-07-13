@@ -4,7 +4,15 @@
 Offload the grunt work to a cheap model, watch it work in plain language, and save your
 premium model budget for the hard thinking.
 
-![Understudy cockpit](docs/hero.gif)
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-3ecf8e.svg" alt="MIT License" />
+  <img src="https://img.shields.io/badge/node-%3E%3D20-3ecf8e.svg" alt="Node >= 20" />
+  <img src="https://img.shields.io/badge/local--only-read--only-3ecf8e.svg" alt="Local-only, read-only" />
+</p>
+
+<p align="center">
+  <img src="docs/hero.gif" alt="Understudy cockpit: the live activity strip cycling through Reading, Exploring, Planning, Testing, and Completed while the step-by-step timeline builds up" width="820" />
+</p>
 
 ## Why
 
