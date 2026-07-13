@@ -541,7 +541,7 @@ export async function runAgy({ root, sandbox, promptFile, mode = "", agent = "" 
   let lastSize = -1, lastChange = Date.now();
   const t0 = Date.now();
   const watchdog = setInterval(async () => {
-    try { const s = (await fs.stat(log)).size; if (s !== lastSize) { lastSize = s; lastChange = Date.now(); } } catch {}
+    try { const s = (await fs.stat(log)).size; if (s !== lastSize) { lastSize = s; lastChange = Date.now(); } } catch { /* stat may fail transiently; ignore */ }
     if (Date.now() - t0 >= TIMEOUT_MS) { termination = "timeout-6min"; child.kill("SIGTERM"); }
     else if (Date.now() - lastChange >= STALL_MS) { termination = "stall-90s-no-output"; child.kill("SIGTERM"); }
   }, 5000);
@@ -578,7 +578,7 @@ function parseFlags(argv) {
 }
 function openBrowser(url) {
   const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-  try { spawn(cmd, [url], { stdio: "ignore", detached: true, shell: process.platform === "win32" }).unref(); } catch {}
+  try { spawn(cmd, [url], { stdio: "ignore", detached: true, shell: process.platform === "win32" }).unref(); } catch { /* best-effort; ignore if no opener is available */ }
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
