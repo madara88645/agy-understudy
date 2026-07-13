@@ -662,7 +662,7 @@ Expected: 2 tests pass.
 
 ```bash
 git add bin src/run.mjs test/run.test.mjs
-git commit -m "feat: agy-understudy CLI (cockpit launcher + `run` delegate to agy)"
+git commit -m 'feat: agy-understudy CLI (cockpit launcher + `run` delegate to agy)'
 ```
 
 ---
