@@ -199,7 +199,7 @@ Leave `/health`, `/api/runs`, `/api/stream`, and `/api/runs/:id` handling exactl
 Replace the `if (process.argv[1] && …) createBridge()…` bottom block with:
 ```js
 export async function startServer({ sandboxRoot, port } = {}) {
-  return createBridge({ sandboxRoot: sandboxRoot ?? process.env.UNDERSTUDY_ROOT, port: port ?? Number(process.env.UNDERSTUDY_PORT) || 4288 });
+  return createBridge({ sandboxRoot: sandboxRoot ?? process.env.UNDERSTUDY_ROOT, port: port ?? (Number(process.env.UNDERSTUDY_PORT) || 4288) });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
