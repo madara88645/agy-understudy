@@ -1,8 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, writeFile, readFile, chmod } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+
+test("understudy run creates a missing sandbox root and names the sandbox it still needs", async () => {
+  const parent = await mkdtemp(path.join(tmpdir(), "understudy-fresh-"));
+  const root = path.join(parent, "agy-sandbox"); // fresh machine: the root does not exist yet
+  const { runAgy } = await import("../src/run.mjs");
+  // This used to fail with a raw `ENOENT: ... realpath`; now the root is created and the
+  // error names the one thing the user actually has to fix.
+  await assert.rejects(
+    () => runAgy({ root, sandbox: path.join(root, "job"), promptFile: path.join(root, "job", "p.md") }),
+    /sandbox directory not found/,
+  );
+  assert.ok(existsSync(root), "the missing sandbox root should have been created");
+});
 
 test("understudy run records log, manifest and exit with a fake agy", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "understudy-"));
