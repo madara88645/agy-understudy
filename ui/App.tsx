@@ -11,6 +11,9 @@ type AgyActivity = ReturnType<typeof analyzeAgyRun>;
 
 const STATUS_LABEL: Record<RunStatus, string> = { running: "Running", completed: "Completed", failed: "Failed", archived: "Archived", stalled: "Stalled", terminated: "Terminated" };
 const TABS: Array<{ id: Tab; label: string }> = [{ id: "log", label: "Log" }, { id: "explain", label: "Explanation" }, { id: "prompt", label: "Prompt" }, { id: "files", label: "Files" }];
+const FIRST_RUN_COMMAND = `mkdir -p ~/agy-sandbox/my-task
+echo "Add a /health endpoint to server.js" > ~/agy-sandbox/my-task/prompt.md
+npx agy-understudy run --dir ~/agy-sandbox/my-task --prompt ~/agy-sandbox/my-task/prompt.md`;
 
 function formatDate(value: string | null) { return value ? new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" }).format(new Date(value)) : "—"; }
 function formatDuration(value: number | null) { if (value === null) return "—"; const seconds = Math.max(0, Math.floor(value / 1000)); const minutes = Math.floor(seconds / 60); return minutes ? `${minutes}m ${seconds % 60}s` : `${seconds}s`; }
@@ -119,7 +122,9 @@ export default function Home() {
           {activity && <ActivityStrip activity={activity} />}
           <div className="content-toolbar"><nav aria-label="Run content">{TABS.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "tab active" : "tab"} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "files" && <small>{detail.files.length}</small>}</button>)}</nav>{activeTab === "log" && <button className={follow ? "follow active" : "follow"} onClick={() => setFollow((value) => !value)}>{follow ? "Following live" : "Paused"}</button>}</div>
           <div ref={contentRef} className="content-card">{activeTab === "files" ? <ul className="files">{detail.files.length ? detail.files.map((file) => <li key={file}><span>⌁</span>{file}</li>) : <li>No files recorded for this run.</li>}</ul> : activeTab === "explain" ? (activity ? <ExplainPanel activity={activity} /> : null) : <MarkdownDocument source={documentSource} empty={activeTab === "log" ? "This run hasn't written a log yet." : "No saved prompt for this archived run."} />}</div>
-        </> : <div className="welcome"><p className="eyebrow">UNDERSTUDY</p><h1>Select a run</h1><p>Open a run from the left to see its live stream, a plain-language explanation of what Antigravity is doing right now, the prompt it was given, and the files it produced.</p><AgyPrimer /></div>}
+        </> : runs.length === 0 && connection !== "offline"
+          ? <div className="welcome"><p className="eyebrow">UNDERSTUDY</p><h1>No runs yet</h1><p className="empty-copy">Understudy shows the Antigravity runs you start through it. Hand it a bounded task and this cockpit streams what Antigravity is doing, in plain language, while it works.</p><pre className="markdown-code"><span>bash</span><code>{FIRST_RUN_COMMAND}</code></pre><AgyPrimer /></div>
+          : <div className="welcome"><p className="eyebrow">UNDERSTUDY</p><h1>Select a run</h1><p className="empty-copy">Open a run from the left to see its live stream, a plain-language explanation of what Antigravity is doing right now, the prompt it was given, and the files it produced.</p><AgyPrimer /></div>}
       </section>
     </section>
   </main>;
