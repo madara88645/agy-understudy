@@ -37,10 +37,17 @@ async function readText(file) {
 }
 
 async function createReader(rootInput) {
-  const root = await fs.realpath(rootInput);
-  const rootStat = await fs.lstat(root);
-  if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error("AGY sandbox root is invalid");
-  async function runPath(id) {
+  const target = path.resolve(rootInput);
+  // Resolved per request rather than once at startup: a fresh install has no sandbox
+  // root yet, and the cockpit must still open (empty) and then pick the root up the
+  // moment the first `understudy run` creates it. The cockpit is read-only, so it
+  // never creates the root itself.
+  async function resolveRoot() {
+    const root = await fs.realpath(target);
+    if (!(await fs.lstat(root)).isDirectory()) throw new Error("AGY sandbox root is invalid");
+    return root;
+  }
+  async function runPath(root, id) {
     if (!isDirectRunId(id)) throw new Error("invalid run id");
     const candidate = path.join(root, id);
     const relative = path.relative(root, candidate);
@@ -78,21 +85,24 @@ async function createReader(rootInput) {
     if (manifest.status === "running" && Number.isInteger(manifest.pid)) { try { process.kill(manifest.pid, 0); return "running"; } catch { return manifest.exitCode === 0 ? "completed" : "failed"; } }
     return ["completed", "failed", "stalled", "terminated"].includes(manifest.status) ? manifest.status : "archived";
   }
-  async function summary(id) {
-    const base = await runPath(id); const logPath = await safeFile(base, "agy.log"); const logStat = await fs.stat(logPath); const manifest = await readManifest(base);
+  async function summary(root, id) {
+    const base = await runPath(root, id); const logPath = await safeFile(base, "agy.log"); const logStat = await fs.stat(logPath); const manifest = await readManifest(base);
     const startedAt = typeof manifest?.startedAt === "string" ? manifest.startedAt : null; const endedAt = typeof manifest?.endedAt === "string" ? manifest.endedAt : null; const start = startedAt ? Date.parse(startedAt) : NaN; const end = endedAt ? Date.parse(endedAt) : Date.now();
     return { id, status: await statusFor(manifest), startedAt, endedAt, lastActivityAt: logStat.mtime.toISOString(), durationMs: Number.isFinite(start) ? Math.max(0, end - start) : null, logBytes: logStat.size, hasManifest: Boolean(manifest) };
   }
   async function runs() {
+    let root;
+    try { root = await resolveRoot(); } catch { return []; } // no sandbox root yet -> nothing to show
     const results = [];
     for (const entry of await fs.readdir(root, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.isSymbolicLink() || !isDirectRunId(entry.name)) continue;
-      try { const base = await runPath(entry.name); const log = path.join(base, "agy.log"); if (!existsSync(log) || lstatSync(log).isSymbolicLink()) continue; results.push(await summary(entry.name)); } catch { /* ignore unsafe folders */ }
+      try { const base = await runPath(root, entry.name); const log = path.join(base, "agy.log"); if (!existsSync(log) || lstatSync(log).isSymbolicLink()) continue; results.push(await summary(root, entry.name)); } catch { /* ignore unsafe folders */ }
     }
     return results.sort((a, b) => Date.parse(b.lastActivityAt ?? "") - Date.parse(a.lastActivityAt ?? ""));
   }
   async function detail(id) {
-    const base = await runPath(id); const [run, manifest, plan, files] = await Promise.all([summary(id), readManifest(base), findPlan(base), listFiles(base)]); const log = await readText(await safeFile(base, "agy.log"));
+    const root = await resolveRoot();
+    const base = await runPath(root, id); const [run, manifest, plan, files] = await Promise.all([summary(root, id), readManifest(base), findPlan(base), listFiles(base)]); const log = await readText(await safeFile(base, "agy.log"));
     let prompt = typeof manifest?.prompt === "string" ? manifest.prompt : null; if (!prompt) { try { prompt = await readText(await safeFile(base, ".agy-prompt.md")); } catch { /* archived run */ } }
     return { ...run, sandboxPath: base, prompt, plan, log, files, pid: Number.isInteger(manifest?.pid) ? manifest.pid : null, pgid: Number.isInteger(manifest?.pgid) ? manifest.pgid : null, exitCode: Number.isInteger(manifest?.exitCode) ? manifest.exitCode : null, termination: typeof manifest?.termination === "string" ? manifest.termination : null };
   }

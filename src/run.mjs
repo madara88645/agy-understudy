@@ -12,7 +12,13 @@ export async function runAgy({ root, sandbox, promptFile, mode = "", agent = "",
   if (mode && mode !== "plan" && mode !== "accept-edits") throw new Error(`mode must be "plan" or "accept-edits" (got "${mode}")`);
   // realpath ALL three paths so the containment check is symlink-safe
   // (macOS /var -> /private/var would otherwise produce false "outside root" errors).
-  const rootReal = await fs.realpath(path.resolve(root ?? process.env.UNDERSTUDY_ROOT ?? path.join(os.homedir(), "agy-sandbox")));
+  // Unlike the read-only cockpit, `run` is about to write into the root anyway, so a
+  // missing root is not an error here — create it instead of failing the very first
+  // delegated run with a raw ENOENT.
+  const rootTarget = path.resolve(root ?? process.env.UNDERSTUDY_ROOT ?? path.join(os.homedir(), "agy-sandbox"));
+  try { await fs.mkdir(rootTarget, { recursive: true }); }
+  catch (e) { throw new Error(`could not create the sandbox root ${rootTarget}: ${e.message}`); }
+  const rootReal = await fs.realpath(rootTarget);
   let sandboxReal;
   try { sandboxReal = await fs.realpath(path.resolve(sandbox)); }
   catch { throw new Error(`sandbox directory not found: ${sandbox}`); }

@@ -1,9 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createBridge } from "../src/server.mjs";
+
+test("opens on a fresh machine with no sandbox root, and picks the root up once it appears", async () => {
+  const parent = await mkdtemp(path.join(tmpdir(), "agy-fresh-"));
+  const root = path.join(parent, "agy-sandbox"); // deliberately never created: this is a brand-new user
+  const server = await createBridge({ sandboxRoot: root, port: 0 }); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal((await fetch(`${base}/health`)).status, 200);
+    assert.deepEqual(await (await fetch(`${base}/api/runs`)).json(), { runs: [] }); // must not crash with ENOENT
+    assert.equal(existsSync(root), false, "the read-only cockpit must not create the root");
+    const run = path.join(root, "first-run"); await mkdir(run, { recursive: true }); await writeFile(path.join(run, "agy.log"), "hello agy\n");
+    const runs = await (await fetch(`${base}/api/runs`)).json(); // the root is resolved per request, so no restart is needed
+    assert.equal(runs.runs.length, 1); assert.equal(runs.runs[0].id, "first-run");
+  } finally { await new Promise((resolve) => server.close(resolve)); }
+});
 
 test("lists an in-root run and rejects traversal and symlink runs", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "agy-viewer-")); const run = path.join(root, "safe-run");
