@@ -88,6 +88,19 @@ Understudy shows the runs **you start through it** (`understudy run` is what rec
 and the run manifest it reads). It is a cockpit for delegated work, not a general-purpose
 tail of everything `agy` has ever done on your machine.
 
+## Built with Understudy
+
+[**ctx**](https://github.com/madara88645/ctx) — a zero-dependency "where was I" CLI — was built
+end to end through Understudy, and is the first real proof that this delegate-and-watch loop
+ships working software. An AI chose the idea; Gemini agents implemented it in **8 bounded
+slices** via `understudy run` (7 clean runs + 1 recovery), each watched live in the cockpit;
+the orchestrator wrote **no product code**. 41/41 tests, published to npm as
+[`@madara88645/ctx`](https://www.npmjs.com/package/@madara88645/ctx).
+
+The honest, slice-by-slice account — including the run that timed out and the Node-version
+footgun a cheap agent debugged on its own — is in
+[ctx's making-of](https://github.com/madara88645/ctx/blob/main/docs/making-of.md).
+
 ## Requirements
 
 - [Google Antigravity](https://antigravity.google) CLI (`agy`) on your PATH.
