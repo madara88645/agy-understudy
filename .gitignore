@@ -23,5 +23,9 @@ tsconfig.tsbuildinfo
 /outputs/
 /work/
 
+# local tooling caches (Cloudflare Wrangler, vinext build)
+/.wrangler/
+/.vinext/
+
 # OS
 .DS_Store
