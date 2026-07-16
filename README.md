@@ -43,6 +43,41 @@ npx agy-understudy
 
 It opens at http://127.0.0.1:4288 and streams what each run is doing, live.
 
+## Writing prompts that actually run
+
+A short, goal-style prompt with no execution mode often makes the agent **stop to ask for
+approval** instead of doing the work: it proposes a design, asks "does this look right?", and
+exits. The process exits cleanly, so the cockpit badges the run **"Ended with question"**
+(not "Completed") and shows you the exact question — but no files were written.
+
+To get a run that does the work end to end:
+
+1. Pass **`--mode accept-edits`** so the agent may write files without a confirmation step.
+2. Make the prompt **imperative** and explicitly forbid stopping for approval.
+3. Give it **absolute paths** it may edit and a **single** validation command.
+
+```bash
+mkdir -p ~/agy-sandbox/health-task
+cat > ~/agy-sandbox/health-task/prompt.md <<'EOF'
+Implement the requested change now. This is a non-interactive run: do NOT ask for
+confirmation, do NOT stop at a design proposal, do NOT wait for approval.
+
+Goal: add a GET /health endpoint that returns {"ok": true} to server.js.
+You may edit only: /absolute/path/to/server.js and /absolute/path/to/test/server.test.mjs.
+Acceptance checks: GET /health responds 200 with {"ok": true}.
+Run only this validation command: npm test.
+At the end, state the changed files, the validation output, and any remaining limitation.
+EOF
+
+npx agy-understudy run \
+  --dir ~/agy-sandbox/health-task \
+  --prompt ~/agy-sandbox/health-task/prompt.md \
+  --mode accept-edits
+```
+
+Even on a clean exit, open the run and check the files it produced — always verify the
+result independently.
+
 ## What you see
 
 - A live **activity strip**: reading / exploring / planning / writing code / testing / question / done.
