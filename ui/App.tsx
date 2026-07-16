@@ -4,7 +4,7 @@ import "./styles.css";
 
 const BRIDGE_URL = ""; // same-origin
 type RunStatus = "running" | "completed" | "failed" | "archived" | "stalled" | "terminated";
-type Run = { id: string; status: RunStatus; startedAt: string | null; endedAt: string | null; lastActivityAt: string | null; durationMs: number | null; logBytes: number; hasManifest: boolean; };
+type Run = { id: string; status: RunStatus; startedAt: string | null; endedAt: string | null; lastActivityAt: string | null; durationMs: number | null; logBytes: number; hasManifest: boolean; endedWithQuestion: boolean; };
 type RunDetail = Run & { sandboxPath: string; prompt: string | null; plan: { path: string; content: string } | null; log: string; files: string[]; pid: number | null; pgid: number | null; exitCode: number | null; termination: string | null; };
 type Tab = "log" | "explain" | "prompt" | "files";
 type AgyActivity = ReturnType<typeof analyzeAgyRun>;
@@ -17,7 +17,12 @@ npx agy-understudy run --dir ~/agy-sandbox/my-task --prompt ~/agy-sandbox/my-tas
 
 function formatDate(value: string | null) { return value ? new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" }).format(new Date(value)) : "—"; }
 function formatDuration(value: number | null) { if (value === null) return "—"; const seconds = Math.max(0, Math.floor(value / 1000)); const minutes = Math.floor(seconds / 60); return minutes ? `${minutes}m ${seconds % 60}s` : `${seconds}s`; }
-function StatusBadge({ status }: { status: RunStatus }) { return <span className={`status status-${status}`}>{STATUS_LABEL[status]}</span>; }
+function StatusBadge({ status, endedWithQuestion = false }: { status: RunStatus; endedWithQuestion?: boolean }) {
+  // A run that exited 0 but stopped on a question never did the work — flag it
+  // distinctly instead of the misleading green "Completed" (see explain.mjs).
+  if (endedWithQuestion) return <span className="status status-asked" title="The run exited on a question — it stopped to ask and did not finish the task.">Ended with question</span>;
+  return <span className={`status status-${status}`}>{STATUS_LABEL[status]}</span>;
+}
 
 function inlineMarkdown(text: string): ReactNode[] {
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]*\))/g);
@@ -115,9 +120,9 @@ export default function Home() {
   return <main className="app-shell">
     <header className="app-header"><div className="brand"><span className="brand-dot" /><strong>Understudy</strong><span className="brand-sub">live cockpit for Antigravity</span></div><div className={`connection connection-${connection}`}><span />{connection === "online" ? "Connected" : connection === "offline" ? "Server offline" : "Connecting"}</div></header>
     <section className="app-layout">
-      <aside className="sidebar"><div className="sidebar-title"><span>Runs</span><b>{runs.length}</b></div>{connection === "offline" && <p className="sidebar-note">Server offline. The cockpit only talks to the local server.</p>}{runs.map((run) => <button key={run.id} className={`run-card ${selectedId === run.id ? "selected" : ""}`} onClick={() => { pinnedRef.current = true; setSelectedId(run.id); setActiveTab("log"); }}><div><strong>{run.id}</strong><StatusBadge status={run.status} /></div><span>{formatDate(run.lastActivityAt)}</span><small>{run.hasManifest ? formatDuration(run.durationMs) : "Archived"}</small></button>)}</aside>
+      <aside className="sidebar"><div className="sidebar-title"><span>Runs</span><b>{runs.length}</b></div>{connection === "offline" && <p className="sidebar-note">Server offline. The cockpit only talks to the local server.</p>}{runs.map((run) => <button key={run.id} className={`run-card ${selectedId === run.id ? "selected" : ""}`} onClick={() => { pinnedRef.current = true; setSelectedId(run.id); setActiveTab("log"); }}><div><strong>{run.id}</strong><StatusBadge status={run.status} endedWithQuestion={run.endedWithQuestion} /></div><span>{formatDate(run.lastActivityAt)}</span><small>{run.hasManifest ? formatDuration(run.durationMs) : "Archived"}</small></button>)}</aside>
       <section className="reading-pane">
-        {detail ? <><div className="run-header"><div><p className="eyebrow">AGY RUN</p><h1>{detail.id}</h1><p className="run-path">{detail.sandboxPath}</p></div><StatusBadge status={detail.status} /></div>
+        {detail ? <><div className="run-header"><div><p className="eyebrow">AGY RUN</p><h1>{detail.id}</h1><p className="run-path">{detail.sandboxPath}</p></div><StatusBadge status={detail.status} endedWithQuestion={activity?.endedWithQuestion} /></div>
           <div className="summary-row"><div><span>Started</span><strong>{formatDate(detail.startedAt)}</strong></div><div><span>Duration</span><strong>{formatDuration(detail.durationMs)}</strong></div><div><span>Exit</span><strong>{detail.exitCode ?? "—"}</strong></div><div><span>Watchdog</span><strong>{detail.termination || "Clean"}</strong></div></div>
           {activity && <ActivityStrip activity={activity} />}
           <div className="content-toolbar"><nav aria-label="Run content">{TABS.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "tab active" : "tab"} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "files" && <small>{detail.files.length}</small>}</button>)}</nav>{activeTab === "log" && <button className={follow ? "follow active" : "follow"} onClick={() => setFollow((value) => !value)}>{follow ? "Following live" : "Paused"}</button>}</div>

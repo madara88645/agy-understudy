@@ -27,6 +27,29 @@ test("lists an in-root run and rejects traversal and symlink runs", async () => 
   try { const runs = await (await fetch(`${base}/api/runs`)).json(); assert.equal(runs.runs.length, 1); assert.equal(runs.runs[0].id, "safe-run"); const detail = await (await fetch(`${base}/api/runs/safe-run`)).json(); assert.equal(detail.log, "hello agy\n"); assert.equal(detail.plan.path, "plan.md"); assert.equal((await fetch(`${base}/api/runs/linked-run`)).status, 400); } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
+test("the runs list flags a completed run that ended on a question (#3)", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "agy-asked-"));
+  const manifest = (extra) => JSON.stringify({ version: 1, status: "completed", exitCode: 0, startedAt: "2026-01-01T00:00:00Z", endedAt: "2026-01-01T00:01:00Z", ...extra });
+
+  const asked = path.join(root, "asked-run"); await mkdir(asked);
+  await writeFile(path.join(asked, "agy.log"), "I will read the files.\nPlease let me know if you approve this design before I proceed.\n");
+  await writeFile(path.join(asked, ".agy-viewer-run.json"), manifest());
+
+  const finished = path.join(root, "done-run"); await mkdir(finished);
+  await writeFile(path.join(finished, "agy.log"), "I will read the files.\nI will run the tests to verify the result.\n");
+  await writeFile(path.join(finished, ".agy-viewer-run.json"), manifest());
+
+  const server = await createBridge({ sandboxRoot: root, port: 0 }); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const { runs } = await (await fetch(`${base}/api/runs`)).json();
+    const askedRun = runs.find((r) => r.id === "asked-run");
+    const doneRun = runs.find((r) => r.id === "done-run");
+    assert.equal(askedRun.status, "completed");
+    assert.equal(askedRun.endedWithQuestion, true);
+    assert.equal(doneRun.endedWithQuestion, false);
+  } finally { await new Promise((resolve) => server.close(resolve)); }
+});
+
 test("serves a built UI asset and falls back to index.html", async () => {
   const { mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os"); const path = (await import("node:path")).default;

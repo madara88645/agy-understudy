@@ -80,12 +80,59 @@ test("a run with no status and no log is archived", () => {
 
 test("every phase has presentation metadata and the primer is populated", () => {
   const phases = new Set(Object.keys(PHASES));
-  for (const phase of ["starting", "reading", "exploring", "planning", "editing", "testing", "running", "asking", "reporting", "done", "failed", "stalled", "archived"]) {
+  for (const phase of ["starting", "reading", "exploring", "planning", "editing", "testing", "running", "asking", "asked", "reporting", "done", "failed", "stalled", "archived"]) {
     assert.ok(phases.has(phase), `missing phase metadata: ${phase}`);
     assert.ok(PHASES[phase].label && PHASES[phase].blurb && PHASES[phase].tone);
   }
   assert.ok(AGY_PRIMER.length >= 4);
   for (const card of AGY_PRIMER) assert.ok(card.q && card.a);
+});
+
+test("approval requests without a question mark are classified as questions (#4)", () => {
+  // verbatim from a real Antigravity run log that stopped without a "?"
+  assert.equal(
+    classifyLine("Please let me know if you approve this design or have any adjustments before I proceed to implementation.")?.phase,
+    "asking",
+  );
+  assert.equal(classifyLine("Please confirm so that we can transition to writing the implementation plan.")?.phase, "asking");
+  assert.equal(classifyLine("Awaiting your approval before I continue.")?.phase, "asking");
+  assert.equal(classifyLine("Let me know if you are happy with this approach.")?.phase, "asking");
+});
+
+test("ordinary narration that merely mentions review/proceed/confirmed is NOT a question (#4)", () => {
+  assert.notEqual(classifyLine("I will run the tests before I proceed to the next slice.")?.phase, "asking");
+  assert.notEqual(classifyLine("I will review the plan file.")?.phase, "asking");
+  assert.notEqual(classifyLine("I will proceed with approach A as confirmed.")?.phase, "asking");
+});
+
+test("a completed run that ended on a question is 'asked', not 'done' (#3)", () => {
+  const log = [
+    "I will read the existing files.",
+    "### Proposed design",
+    "Please let me know if you approve this design before I proceed to implementation.",
+  ].join("\n");
+  const activity = analyzeAgyRun({ log, status: "completed" });
+  assert.equal(activity.phase, "asked");
+  assert.equal(activity.endedWithQuestion, true);
+  assert.match(activity.question ?? "", /approve this design/);
+});
+
+test("a completed run that really finished stays 'done' (#3)", () => {
+  const log = "I will read the file.\nI will run the tests to verify the generator.";
+  const activity = analyzeAgyRun({ log, status: "completed" });
+  assert.equal(activity.phase, "done");
+  assert.equal(activity.endedWithQuestion, false);
+});
+
+test("only a clean exit becomes 'asked' — failed/stalled/live keep their own state (#3)", () => {
+  const log = "I will plan the work.\nShould I proceed with approach A or B?";
+  assert.equal(analyzeAgyRun({ log, status: "failed" }).phase, "failed");
+  assert.equal(analyzeAgyRun({ log, status: "failed" }).endedWithQuestion, false);
+  assert.equal(analyzeAgyRun({ log, status: "stalled" }).phase, "stalled");
+  // a LIVE run sitting on a question stays the live "asking", not the terminal "asked"
+  const live = analyzeAgyRun({ log, status: "running" });
+  assert.equal(live.phase, "asking");
+  assert.equal(live.endedWithQuestion, false);
 });
 
 test("a question resolved earlier in the log is NOT shown on a finished run", () => {
