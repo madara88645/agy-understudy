@@ -10,9 +10,9 @@
 // deterministic and unit-testable, matching this project's local-only ethos.
 
 /**
- * @typedef {"starting"|"reading"|"exploring"|"planning"|"editing"|"testing"|"running"|"asking"|"reporting"|"done"|"failed"|"stalled"|"archived"} AgyPhase
+ * @typedef {"starting"|"reading"|"exploring"|"planning"|"editing"|"testing"|"running"|"asking"|"asked"|"reporting"|"done"|"failed"|"stalled"|"archived"} AgyPhase
  * @typedef {{ phase: AgyPhase, line: string, index: number }} AgyStep
- * @typedef {{ phase: AgyPhase, headline: string, explanation: string, currentLine: string|null, isLive: boolean, question: string|null, steps: AgyStep[], stepCount: number }} AgyActivity
+ * @typedef {{ phase: AgyPhase, headline: string, explanation: string, currentLine: string|null, isLive: boolean, question: string|null, endedWithQuestion: boolean, steps: AgyStep[], stepCount: number }} AgyActivity
  */
 
 /**
@@ -29,6 +29,7 @@ export const PHASES = {
   testing:   { label: "Testing",        icon: "✓", tone: "test",    blurb: "Antigravity is running tests / validation. It's checking that the code it wrote actually works." },
   running:   { label: "Running command",icon: "»", tone: "run",     blurb: "Antigravity is running a command (build, install, script). The result will shape its next step." },
   asking:    { label: "Question",       icon: "?", tone: "warn",    blurb: "Antigravity raised a question or hit a decision point. The log shows which choice it paused on." },
+  asked:     { label: "Ended with question", icon: "?", tone: "warn", blurb: "The run exited on a question or approval request — it stopped to ask and did NOT finish the task. Read the question below, then re-run with a decision (or an imperative, non-interactive prompt) so it does the work." },
   reporting: { label: "Reporting",      icon: "▣", tone: "info",    blurb: "Antigravity is wrapping up: summarizing what it did, the result, and any limits. Near the finish." },
   done:      { label: "Completed",      icon: "●", tone: "ok",      blurb: "Antigravity finished cleanly. Check the exit code and the files it produced — but still verify the result independently." },
   failed:    { label: "Failed",         icon: "✕", tone: "bad",     blurb: "Antigravity stopped with an error (non-zero exit). Look at the error message at the end of the log." },
@@ -41,6 +42,14 @@ export const PHASES = {
 // "Should be straightforward.") being misread as pending decisions; the cue
 // avoids stray "?" in code/URLs (e.g. `a ? b : c`) triggering a false question.
 const QUESTION_CUE = /\b(how|should|would|does|do|did|shall|which|what|why|when|where|can|could|is it|is this|are you|are these|may i|will i)\b/i;
+
+// Some runs end on an explicit approval request that carries NO "?", e.g.
+// "Please let me know if you approve this design before I proceed." Those are
+// real decision points the run is waiting on, so a small, closed, ordered set of
+// approval-request cues counts as a question too. Kept deliberately narrow (an
+// explicit ask-for-approval verb, or an "awaiting …" gate) so ordinary narration
+// that merely mentions "review", "confirm", or "proceed" is not misread.
+const APPROVAL_CUE = /\bplease\s+(?:confirm|approve|review|advise|let me know)\b|\blet me know\s+(?:if you|if this|if these|whether|your)\b|\bawaiting\s+(?:your\s+)?(?:approval|confirmation|sign-?off|feedback|response|go-?ahead)\b|\bfor your\s+(?:approval|review|confirmation|sign-?off)\b|\bif you\s+(?:approve|confirm|agree|are happy)\b|\bonce you\s+(?:approve|confirm|sign)\b|\bso (?:that )?we can\s+transition\b/i;
 const NARRATION_START = /^(i will\b|i'll\b|i am going to\b|i'm going to\b|i am now\b|i'm now\b|i am\b|i'm\b|i have\b|i've\b|let me\b|now i\b|next,? i\b|first,? i\b|then i\b|i need to\b|i plan to\b|i should\b|i can\b|going to\b|proceeding to\b)/i;
 const HEADING = /^#{1,6}\s+\S/;
 
@@ -69,7 +78,7 @@ export function classifyLine(raw, index = 0) {
   if (!line) return null;
 
   const display = line.replace(/^#{1,6}\s+/, "");
-  const isQuestion = line.includes("?") && QUESTION_CUE.test(line);
+  const isQuestion = (line.includes("?") && QUESTION_CUE.test(line)) || APPROVAL_CUE.test(line);
   const isNarration = NARRATION_START.test(line);
   const isHeading = HEADING.test(line);
 
@@ -121,13 +130,23 @@ export function analyzeAgyRun(run = {}) {
 
   const lastStep = steps.length ? steps[steps.length - 1] : null;
 
+  // Surface a question/decision ONLY when it was Antigravity's *last* action —
+  // i.e. the run currently sits on it. A question resolved earlier in the log is
+  // not a pending decision and must not be shown next to a done/failed run.
+  const endedOnQuestion = lastStep?.phase === "asking";
+
   const finished = terminalPhase(status);
+  // A run that exited on its own (completed) but whose last action was a question
+  // never did the work — it stopped to ask. Distinguish it from a clean "done" so
+  // the badge doesn't read "Completed" for a run that is really waiting on the
+  // user. Failed/stalled keep their own terminal phase (already a warning).
+  const endedWithQuestion = finished === "done" && endedOnQuestion;
   /** @type {AgyPhase} */
   let phase;
   if (isLive) {
     phase = lastStep ? lastStep.phase : "starting";
   } else if (finished) {
-    phase = finished;
+    phase = endedWithQuestion ? "asked" : finished;
   } else if (lastStep) {
     // Unknown status but we have activity — reflect the last thing it did.
     phase = lastStep.phase;
@@ -148,11 +167,6 @@ export function analyzeAgyRun(run = {}) {
     explanation = `The run was killed by the watchdog because ${reason}. The end of the log shows where it stopped.`;
   }
 
-  // Surface a question/decision ONLY when it was Antigravity's *last* action —
-  // i.e. the run currently sits on it. A question resolved earlier in the log is
-  // not a pending decision and must not be shown next to a done/failed run.
-  const endedOnQuestion = lastStep?.phase === "asking";
-
   return {
     phase,
     headline: meta.label,
@@ -160,6 +174,7 @@ export function analyzeAgyRun(run = {}) {
     currentLine,
     isLive,
     question: endedOnQuestion ? lastStep.line : null,
+    endedWithQuestion,
     steps,
     stepCount: steps.length,
   };

@@ -4,6 +4,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
+import { analyzeAgyRun } from "./explain.mjs";
 
 const UI_DIR = fileURLToPath(new URL("../dist/ui", import.meta.url));
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".json": "application/json; charset=utf-8", ".ico": "image/x-icon", ".woff2": "font/woff2", ".png": "image/png" };
@@ -88,7 +89,15 @@ async function createReader(rootInput) {
   async function summary(root, id) {
     const base = await runPath(root, id); const logPath = await safeFile(base, "agy.log"); const logStat = await fs.stat(logPath); const manifest = await readManifest(base);
     const startedAt = typeof manifest?.startedAt === "string" ? manifest.startedAt : null; const endedAt = typeof manifest?.endedAt === "string" ? manifest.endedAt : null; const start = startedAt ? Date.parse(startedAt) : NaN; const end = endedAt ? Date.parse(endedAt) : Date.now();
-    return { id, status: await statusFor(manifest), startedAt, endedAt, lastActivityAt: logStat.mtime.toISOString(), durationMs: Number.isFinite(start) ? Math.max(0, end - start) : null, logBytes: logStat.size, hasManifest: Boolean(manifest) };
+    const status = await statusFor(manifest);
+    // The runs list has no log to analyze client-side, so derive here whether a
+    // "completed" run actually stopped to ask a question (see explain.mjs). Only
+    // completed runs can be the misleading case, so skip the log read otherwise.
+    let endedWithQuestion = false;
+    if (status === "completed") {
+      try { endedWithQuestion = analyzeAgyRun({ log: await readText(logPath), status }).endedWithQuestion; } catch { /* unreadable log -> leave false */ }
+    }
+    return { id, status, startedAt, endedAt, lastActivityAt: logStat.mtime.toISOString(), durationMs: Number.isFinite(start) ? Math.max(0, end - start) : null, logBytes: logStat.size, hasManifest: Boolean(manifest), endedWithQuestion };
   }
   async function runs() {
     let root;
