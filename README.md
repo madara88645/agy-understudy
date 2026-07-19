@@ -4,6 +4,8 @@
 Offload the grunt work to a cheap model, watch it work in plain language, and save your
 premium model budget for the hard thinking.
 
+> **Requires the Google Antigravity CLI (`agy`) on your `PATH`.** Understudy watches what `agy` does — install it first ([see Requirements](#requirements)).
+
 <p align="center">
   <a href="https://www.npmjs.com/package/agy-understudy"><img src="https://img.shields.io/npm/v/agy-understudy?color=3ecf8e" alt="npm version" /></a>
   <a href="https://github.com/madara88645/agy-understudy/actions/workflows/ci.yml"><img src="https://github.com/madara88645/agy-understudy/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
