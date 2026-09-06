@@ -53,7 +53,14 @@ function fail(message) {
 }
 function openBrowser(url) {
   const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
-  try { spawn(cmd, [url], { stdio: "ignore", detached: true, shell: process.platform === "win32" }).unref(); } catch { /* best-effort; ignore if no opener is available */ }
+  try {
+    const child = spawn(cmd, [url], { stdio: "ignore", detached: true, shell: process.platform === "win32" });
+    // spawn() reports a missing opener asynchronously, so this listener — not the catch
+    // below — is what keeps a headless box (no xdg-open) from killing the whole cockpit
+    // with an unhandled 'error' event right after it printed the URL.
+    child.on("error", () => { /* best-effort; the URL is already on stdout */ });
+    child.unref();
+  } catch { /* best-effort; ignore if no opener is available */ }
 }
 
 const argv = process.argv.slice(2);
