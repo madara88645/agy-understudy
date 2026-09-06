@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { existsSync } from "node:fs";
+import { promises as fsp } from "node:fs";
 import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -57,6 +58,34 @@ test("a busy port fails with a sentence, not an unhandled EADDRINUSE", async () 
   try {
     await assert.rejects(() => createBridge({ sandboxRoot: root, port }), /already in use.*--port/s);
   } finally { await new Promise((resolve) => first.close(resolve)); }
+});
+
+test("a log truncated while it is read comes back clean, not NUL-padded", async () => {
+  // `understudy run` does writeFile(agy.log, "") when it re-uses a sandbox, while the
+  // cockpit polls the same file every second — so the log can shrink between the server's
+  // lstat() and its read(). Racing that window from the outside is unreliable, so force
+  // it: every lstat() of agy.log returns a stat taken *before* the file shrank again,
+  // which is exactly the state the real race produces.
+  const NUL = String.fromCharCode(0);
+  const root = await mkdtemp(path.join(tmpdir(), "agy-trunc-"));
+  const run = path.join(root, "reused-run"); await mkdir(run);
+  const log = path.join(run, "agy.log");
+  await writeFile(log, "A".repeat(8192));
+
+  const realLstat = fsp.lstat;
+  let size = 8192;
+  fsp.lstat = async (target, ...rest) => {
+    const stat = await realLstat(target, ...rest);
+    if (String(target).endsWith("agy.log") && size > 64) { size = Math.floor(size / 2); await writeFile(log, "A".repeat(size)); }
+    return stat; // deliberately stale: it still reports the pre-shrink size
+  };
+
+  const server = await createBridge({ sandboxRoot: root, port: 0 }); const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const detail = await (await fetch(`${base}/api/runs/reused-run`)).json();
+    assert.ok(!detail.log.includes(NUL), "the served log must not contain NUL padding");
+    assert.match(detail.log, /^A+$/);
+  } finally { fsp.lstat = realLstat; await new Promise((resolve) => server.close(resolve)); }
 });
 
 test("serves a built UI asset and falls back to index.html", async () => {

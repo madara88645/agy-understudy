@@ -34,7 +34,10 @@ async function readText(file) {
   const stat = await fs.lstat(file);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("unsafe file");
   const handle = await fs.open(file, "r");
-  try { const start = Math.max(0, stat.size - MAX_TEXT_BYTES); const buffer = Buffer.alloc(stat.size - start); await handle.read(buffer, 0, buffer.length, start); return buffer.toString("utf8"); } finally { await handle.close(); }
+  // Read back only what we actually got: `understudy run` truncates agy.log when it
+  // re-uses a sandbox, and the cockpit polls every second, so a short read is normal.
+  // Trusting stat.size instead would pad the log the UI renders with NUL bytes.
+  try { const start = Math.max(0, stat.size - MAX_TEXT_BYTES); const buffer = Buffer.alloc(stat.size - start); const { bytesRead } = await handle.read(buffer, 0, buffer.length, start); return buffer.subarray(0, bytesRead).toString("utf8"); } finally { await handle.close(); }
 }
 
 async function createReader(rootInput) {
