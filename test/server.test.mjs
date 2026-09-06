@@ -50,6 +50,15 @@ test("the runs list flags a completed run that ended on a question (#3)", async 
   } finally { await new Promise((resolve) => server.close(resolve)); }
 });
 
+test("a busy port fails with a sentence, not an unhandled EADDRINUSE", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "agy-busy-"));
+  const first = await createBridge({ sandboxRoot: root, port: 0 });
+  const port = first.address().port;
+  try {
+    await assert.rejects(() => createBridge({ sandboxRoot: root, port }), /already in use.*--port/s);
+  } finally { await new Promise((resolve) => first.close(resolve)); }
+});
+
 test("serves a built UI asset and falls back to index.html", async () => {
   const { mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os"); const path = (await import("node:path")).default;

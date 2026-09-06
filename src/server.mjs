@@ -136,7 +136,17 @@ export async function createBridge({ sandboxRoot = process.env.UNDERSTUDY_ROOT |
       return serveStatic(response, url.pathname);
     } catch (error) { const message = error instanceof Error ? error.message : "unknown error"; return text(response, /invalid|outside|unsafe|resolved/.test(message) ? 400 : 404, message); }
   });
-  await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve)); return server;
+  // listen() reports failure as an 'error' event, not a rejection. Without this the most
+  // ordinary mistake there is — starting a second cockpit while one is already open —
+  // killed the process with a raw EADDRINUSE stack trace instead of a sentence.
+  await new Promise((resolve, reject) => {
+    const onError = (error) => reject(error.code === "EADDRINUSE"
+      ? new Error(`port ${port} is already in use — the cockpit may already be running. Try --port <n>.`)
+      : error);
+    server.once("error", onError);
+    server.listen(port, "127.0.0.1", () => { server.off("error", onError); resolve(); });
+  });
+  return server;
 }
 
 export async function startServer({ sandboxRoot, port } = {}) {
