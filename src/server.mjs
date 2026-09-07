@@ -34,7 +34,10 @@ async function readText(file) {
   const stat = await fs.lstat(file);
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("unsafe file");
   const handle = await fs.open(file, "r");
-  try { const start = Math.max(0, stat.size - MAX_TEXT_BYTES); const buffer = Buffer.alloc(stat.size - start); await handle.read(buffer, 0, buffer.length, start); return buffer.toString("utf8"); } finally { await handle.close(); }
+  // Read back only what we actually got: `understudy run` truncates agy.log when it
+  // re-uses a sandbox, and the cockpit polls every second, so a short read is normal.
+  // Trusting stat.size instead would pad the log the UI renders with NUL bytes.
+  try { const start = Math.max(0, stat.size - MAX_TEXT_BYTES); const buffer = Buffer.alloc(stat.size - start); const { bytesRead } = await handle.read(buffer, 0, buffer.length, start); return buffer.subarray(0, bytesRead).toString("utf8"); } finally { await handle.close(); }
 }
 
 async function createReader(rootInput) {
@@ -136,7 +139,17 @@ export async function createBridge({ sandboxRoot = process.env.UNDERSTUDY_ROOT |
       return serveStatic(response, url.pathname);
     } catch (error) { const message = error instanceof Error ? error.message : "unknown error"; return text(response, /invalid|outside|unsafe|resolved/.test(message) ? 400 : 404, message); }
   });
-  await new Promise((resolve) => server.listen(port, "127.0.0.1", resolve)); return server;
+  // listen() reports failure as an 'error' event, not a rejection. Without this the most
+  // ordinary mistake there is — starting a second cockpit while one is already open —
+  // killed the process with a raw EADDRINUSE stack trace instead of a sentence.
+  await new Promise((resolve, reject) => {
+    const onError = (error) => reject(error.code === "EADDRINUSE"
+      ? new Error(`port ${port} is already in use — the cockpit may already be running. Try --port <n>.`)
+      : error);
+    server.once("error", onError);
+    server.listen(port, "127.0.0.1", () => { server.off("error", onError); resolve(); });
+  });
+  return server;
 }
 
 export async function startServer({ sandboxRoot, port } = {}) {

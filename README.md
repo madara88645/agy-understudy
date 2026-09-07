@@ -110,8 +110,24 @@ footgun a cheap agent debugged on its own — is in
 
 ## Configuration
 
+Run `agy-understudy --help` for the full list, or `--version` for the version.
+
+Cockpit (`agy-understudy`):
+
 - `--root <dir>` / `UNDERSTUDY_ROOT` — where runs live (default `~/agy-sandbox`).
 - `--port <n>` / `UNDERSTUDY_PORT` — cockpit port (default 4288).
+- `--no-open` — print the URL but don't open a browser window.
+
+Delegating a run (`agy-understudy run`):
+
+- `--dir <sandbox>` — the run directory, which must sit inside `--root`. Required.
+- `--prompt <file>` — the prompt file, which must sit inside `--dir`. Required.
+- `--mode plan|accept-edits` — passed through to `agy`; see
+  [writing prompts that actually run](#writing-prompts-that-actually-run).
+- `--agent <name>` — passed through to `agy` to pick a specific agent.
+
+Both `--root <dir>` and `--root=<dir>` work. A misspelled command or option is an error —
+Understudy will not quietly start with a default instead.
 
 ## How it works
 
